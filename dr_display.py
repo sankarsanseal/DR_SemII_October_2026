@@ -9,4 +9,4 @@ path_to_excel_file = os.path.join(os.path.dirname(path_to_the_excel_file),"dr_se
 
 if os.path.exists(path_to_excel_file):
     dr_df = pd.read_excel(path_to_excel_file)
-    st.print(dr_df)
+    st.header(dr_df)
