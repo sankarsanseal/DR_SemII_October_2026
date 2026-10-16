@@ -46,7 +46,8 @@ if os.path.exists(path_to_excel_file):
                                                     if_sheet_exists="replace" if os.path.exists(path_to_subject_wise_sorted_dr) else None 
                                                     ) as student_writer:
                     if pd.notna(subject_code):
-                        student_list = dr_df[dr_df[column] == subject_code][["Roll No", "Registration No", "Registration Year", column, subject_name_dict.get(column, "")]]
+                        student_list = dr_df[dr_df[column] == subject_code][["Roll No", "Registration No", "Registration Year", "NEP program", 
+                                                                                column, subject_name_dict.get(column, "")]]
                         student_list.to_excel(student_writer, sheet_name=subject_code.replace("/", "_"), index=False)
             
             counts.to_excel(writer, sheet_name=column.replace("/", "_"), index=False)
