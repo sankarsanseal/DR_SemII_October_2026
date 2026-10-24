@@ -1,3 +1,8 @@
 streamlit
 pandas
 openpyxl
+xlrd
+st-gsheets-connection
+sqlalchemy 
+psycopg2-binary
+psycopg[binary]
