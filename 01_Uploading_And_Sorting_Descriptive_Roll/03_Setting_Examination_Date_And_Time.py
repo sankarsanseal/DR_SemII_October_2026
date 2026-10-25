@@ -10,25 +10,27 @@ exam_date_time_update_container = st.container(
                                                 )
 exam_date_time_update_container.title("Exam Date and Start Time Update")
 
+
+col1, col2, col3 = exam_date_time_update_container.columns(3, 
+                                                           gap = "xxsmall",)
+
 exam_date_time_update_form = exam_date_time_update_container.form(
                                                                     key = "Exam_Date_Time_Update_Form",
                                                                     )
 
-
-col1, col2, col3 = exam_date_time_update_form.columns(3, 
+col4, col5, col6 = exam_date_time_update_form.columns(3, 
                                                            gap = "xxsmall",
                                                            )
 
 
+# st.session_state.exam_code_list = []
 
-st.session_state.exam_code_list = []
-
-# exam_code_selection_box = col1.empty()
+exam_code_selection_box = exam_date_time_update_container.empty()
 try:
     conn_sql = st.connection(
                             name = "neon", 
                             type =  "sql", 
-                            ttl = 1
+                            ttl = 0
                         )
 
 except sql_errors.ConnectionError as de:
@@ -49,12 +51,11 @@ if conn_sql:
 
 
             if exam_code_resultset.rowcount > 0:
-                st.session_state.exam_code_list = [ row[0] for row in exam_code_resultset ]
                 exam_code_selection_box = col1.selectbox(
                                             label = "Select the exam course code",
-                                            options = st.session_state.exam_code_list,
+                                            options = [ row[0] for row in exam_code_resultset ],
                                             index = None,
-                                            key = f"Exam_Code_Selection_Box_Updated",
+                                            key = f"Exam_Code_Selection_Box_Updated_{exam_code_selection_box}",
                                         )
 
             
@@ -62,7 +63,7 @@ if conn_sql:
             exam_date_time_update_container.error(de)
 
 
-        col1.text_input( 
+        col4.text_input( 
                         label = f"Selected Exam Code", 
                         value = f"{exam_code_selection_box}",
                         disabled = True,
@@ -89,11 +90,11 @@ if conn_sql:
                 col2.date_input(
                                 label = f"Present Exam Date", 
                                 value = selected_row[1], 
-                                key = f"Present_Exam_Date_{selected_row[0]}",
-                                # placeholder = selected_row[1],
+                                key = "Present_Exam_Date_{0}".format( selected_row[0] ) , 
+                                format = "DD/MM/YYYY",
                                 disabled = True  
                                 )
-                exam_date = col2.date_input(    
+                exam_date = col5.date_input(    
                                 label = f"New Exam Date", 
                                 value = selected_row[1], 
                                 key = f"New_Exam_Date_{exam_code_selection_box}",
@@ -104,12 +105,12 @@ if conn_sql:
                 col3.time_input(
                                     label = f"Present Exam Start Time",
                                     value = selected_row[2],
-                                    key = f"Present_Exam_Start_Time_{selected_row[0]}",
+                                    # key = f"Present_Exam_Start_Time_{selected_row[0]}",
                                     disabled = True,
                                     format = "12h"
                                     )
                     
-                exam_start_time = col3.time_input(
+                exam_start_time = col6.time_input(
                                     label = f"New Exam Start Time",
                                     value = selected_row[2],
                                     key = f"New_Exam_Start_Time_{selected_row[0]}",
@@ -119,9 +120,10 @@ if conn_sql:
 
                 exam_date_time_update_form_submit = exam_date_time_update_form.form_submit_button(
                                                                                 label = 
-                                                                                "Update the Date and Time of the Examnimation", 
-                                                                                key = "Exam_Date_Time_UpdateForm_Submit_Button",
+                                                                                "Update the Date and Time of the Examination", 
+                                                                                key = f"Exam_Date_Time_Update_Form_Submit_Button_{selected_row[0]}",
                                                                                 width = "stretch",
+                                                                                # on_click = "rerun",
                                                                                 )
 
 
@@ -135,7 +137,7 @@ if conn_sql:
                                                             WHERE exam_course_code = :exam_course_code
                                                             """
                                                             )
-                    if exam_date is not None and exam_start_time is not None:
+                    if exam_date is not None and exam_start_time is not None and exam_date_time_update_form_submit:
                         update_status = exam_date_session.execute( 
                                                                 statement = exam_date_time_update_query,
                                                                 params = { "exam_date" : exam_date.strftime("%Y-%m-%d"),
@@ -149,7 +151,7 @@ if conn_sql:
 
                         exam_date_time_update_container.success(    "The update of Exam Date and"
                                                                 f" Start Time is successful for {exam_code_selection_box}"
-                                                                f" with status code {update_status}.")
+                                                                f" with no of rows updated {update_status.rowcount}.")
 
                 except sql_errors.IntegrityError as ie:
                     exam_date_time_update_container.error(ie)
@@ -167,6 +169,7 @@ if conn_sql:
             all_exam_date_time_query = (
                                                 """
                                                 SELECT * FROM exam_dates
+                                                ORDER BY exam_course_code
                                                 """
             )
             all_exam_date_time_df = conn_sql.query(all_exam_date_time_query, ttl = 10)
