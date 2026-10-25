@@ -29,7 +29,7 @@ selected_no_years_of_subject = col2.selectbox(
 if selected_subject_type is not None:
     conn_sql = st.connection(   name = "neon", 
                                 type ="sql", 
-                                ttl = 1
+                                ttl = "1m"
                             )
 
     

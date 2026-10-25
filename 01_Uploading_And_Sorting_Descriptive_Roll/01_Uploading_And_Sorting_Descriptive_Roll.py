@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from psycopg import errors as sql_errors
 
 from streamlit_gsheets import GSheetsConnection
 
@@ -83,6 +84,25 @@ if dr_uploaded_status:
                                         title = "Database"
                                     )
 
+
+            with conn_neon.session as truncation_session:
+
+                try:
+                    truncate_sql = sqltext(
+                                        """
+                                        TRUNCATE TABLE exam_dates;
+                                        """
+                                        )
+
+                    truncation_status = truncation_session.execute(truncate_sql)
+
+                    truncation_session.commit()
+
+                    upload_container.success("The truncation of Table exam_dates is"
+                                             " successful with status {0}.".format(truncation_status.rowcount))
+                except sql_errors.DatabaseError as de:
+                    upload_container.error(de)
+
             
             for subj_type, full_column_name in cdr.subject_type_dict.items():
                 
@@ -95,9 +115,18 @@ if dr_uploaded_status:
 
                 with conn_neon.session as sql_session:
 
-                    truncate_sql = f"""TRUNCATE TABLE {subj_type}_STUDENT_COUNT;"""
+                    truncate_sql = sqltext(f"""TRUNCATE TABLE {subj_type}_STUDENT_COUNT;""")
 
-                    upload_container.success(f"Truncation of Table {subj_type}_count is successful.")
+                    try:
+                        truncation_status = sql_session.execute(truncate_sql)
+
+                        sql_session.commit()
+
+                        upload_container.success(f"Truncation of Table {subj_type}_count" 
+                                                 " is successful with status {0}.".format(truncation_status.rowcount))
+                    except sql_errors.DatabaseError as de:
+
+                        upload_container.error(de)
 
                     try:
 
@@ -138,9 +167,32 @@ if dr_uploaded_status:
 
                         sql_session.commit()
 
-                        upload_container.success(f"Insertion to table {subj_type}_student_count is complete.")
+                        upload_container.success(f"Insertion to Table {subj_type}_student_count is complete.")
                     except ValueError as ve:
                         upload_container.error(ve)
+
+
+
+                    try:
+
+                        insert_exam_course_code_sql = sqltext("""
+                                                                INSERT INTO exam_dates (exam_course_code)
+                                                                SELECT DISTINCT {0}_COURSE_CODE FROM {0}_STUDENT_COUNT
+                                                        """.format(subj_type))
+
+
+                        insertion_status = sql_session.execute(insert_exam_course_code_sql)
+
+                        sql_session.commit()
+
+                        upload_container.success(
+                                                    body = "Insertion to Table EXAM_DATES is"
+                                                            " complete with insertion status {0}."
+                                                            .format(insertion_status.rowcount)
+                                                            ,
+                                                    title = f"{subj_type.upper()}")
+                    except sql_errors.UniqueViolation as de:
+                        st.error(de)
                         
 
             

@@ -29,8 +29,15 @@ step_01_01 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/01_Upload
 step_01_02 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/02_Checking_Subjects_Distribution.py", 
                      title = "02. Checking Subjects' Distribution")
 
+step_01_03 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/03_Setting_Examination_Date_And_Time.py",
+                     title = "03. Insert the Exam Date and Timing")
+
 landing_page = st.navigation( pages = {
-"Step 01" : [step_01_01, step_01_02],
+"Step 01" : [
+                step_01_01, 
+                step_01_02,
+                step_01_03
+                ],
 },
 expanded = True,
 position = "sidebar"
