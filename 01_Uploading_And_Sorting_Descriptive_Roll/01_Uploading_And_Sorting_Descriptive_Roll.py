@@ -43,11 +43,14 @@ try:
                                                 label = "**Please upload the descriptive roll (DR) provided by the university:**", 
                                                 type = ["xls", "xlsx"], 
                                                 key = "DR_file_uploader",
+                                                width = "stretch",
                                                 )
 except TypeError as te:
     dr_upload_form.error(te)
 
-dr_uploaded_status = dr_upload_form.form_submit_button(label = "Upload the Descriptive Roll (DR) and Generate the sorted DR")
+dr_uploaded_status = dr_upload_form.form_submit_button(label = "Upload the Descriptive Roll"
+                                                                " (DR) and Generate the sorted DR", 
+                                                       width =  "stretch")
 
 
 if dr_uploaded_status:
@@ -193,8 +196,85 @@ if dr_uploaded_status:
                                                     title = f"{subj_type.upper()}")
                     except sql_errors.UniqueViolation as de:
                         st.error(de)
-                        
+            try:
 
+                truncate_sql = sqltext(
+                                        """
+                                        TRUNCATE TABLE ALL_STUDENTS_DETAILS
+                                        """
+                                        ) 
+
+                sql_session.execute(truncate_sql)
+
+                upload_container.success("The truncation of Table all_student_details is complete.")
+
+            except sql_errors.DatabaseError as de:
+                upload_container.error(de)
+
+            total_rows = len(original_dr)
+            all_student_upload_progress_bar = upload_container.progress(0.0, text = "Student Insertion Progress")
+
+            for indx, row in original_dr.iterrows():
+
+                all_student_upload_progress_bar.progress(
+                                                            value = indx / total_rows, 
+                                                            text = "Student Insertion Progress"
+                                                         )
+
+                for paper_code, paper_name in cdr.subject_name_dict.items():
+                    try:
+
+
+                        if pd.notna(row[paper_code])  :
+
+                            student_insertion_query = sqltext("""
+                                                        INSERT INTO ALL_STUDENTS_DETAILS
+                                                        (
+                                                            ROLL_NO,
+                                                            REGISTRATION_NO,
+                                                            REGISTRATION_YEAR,
+                                                            NEP_Program,
+                                                            COLLEGE_CODE,
+                                                            COLLEGE_NAME,
+                                                            EXAM_CATEGORY,
+                                                            COURSE_CODE,
+                                                            COURSE_PAPER_NAME
+                                                        )
+                                                        VALUES 
+                                                        (
+                                                            :roll_no,
+                                                            :registration_no,
+                                                            :registration_year,
+                                                            :nep_program,
+                                                            :college_code,
+                                                            :college_name,
+                                                            :exam_category,
+                                                            :course_code,
+                                                            :course_paper_name
+                                                        )
+                                                    """)
+
+                            sql_session.execute(statement = student_insertion_query, 
+                                                            params = {  
+                                                            "roll_no" : row["Roll No"] ,
+                                                            "registration_no" :  row[ "Registration No" ],
+                                                            "registration_year" : row[ "Registration Year" ],
+                                                            "nep_program" : row [ "NEP program" ][:14].strip(),
+                                                            "college_code" :  row[ "College Code" ],
+                                                            "college_name" : row [ "College Name" ],
+                                                            "exam_category" : row[ "Exam Category" ],
+                                                            "course_code" : getattr(row, paper_code),
+                                                            "course_paper_name" : getattr(row, paper_name)
+                                                            }
+                                                            )
+                         
+                        
+                    except sql_errors.IntegrityError as ie:
+                         upload_container.error(ie)
+
+
+            sql_session.commit()
+            upload_container.success("All Student Details are inserted.")
             
 
 
