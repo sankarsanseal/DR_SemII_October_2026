@@ -196,86 +196,178 @@ if dr_uploaded_status:
                                                     title = f"{subj_type.upper()}")
                     except sql_errors.UniqueViolation as de:
                         st.error(de)
-            try:
-
-                truncate_sql = sqltext(
-                                        """
-                                        TRUNCATE TABLE ALL_STUDENTS_DETAILS
-                                        """
-                                        ) 
-
-                sql_session.execute(truncate_sql)
-
-                upload_container.success("The truncation of Table all_student_details is complete.")
-
-            except sql_errors.DatabaseError as de:
-                upload_container.error(de)
-
-            total_rows = len(original_dr)
-            all_student_upload_progress_bar = upload_container.progress(0.0, text = "Student Insertion Progress")
-
-            for indx, row in original_dr.iterrows():
-
-                all_student_upload_progress_bar.progress(
-                                                            value = indx / total_rows, 
-                                                            text = "Student Insertion Progress"
-                                                         )
-
-                for paper_code, paper_name in cdr.subject_name_dict.items():
-                    try:
 
 
-                        if pd.notna(row[paper_code])  :
+            with conn_neon.session as sql_session:
 
-                            student_insertion_query = sqltext("""
-                                                        INSERT INTO ALL_STUDENTS_DETAILS
-                                                        (
-                                                            ROLL_NO,
-                                                            REGISTRATION_NO,
-                                                            REGISTRATION_YEAR,
-                                                            NEP_Program,
-                                                            COLLEGE_CODE,
-                                                            COLLEGE_NAME,
-                                                            EXAM_CATEGORY,
-                                                            COURSE_CODE,
-                                                            COURSE_PAPER_NAME
-                                                        )
-                                                        VALUES 
-                                                        (
-                                                            :roll_no,
-                                                            :registration_no,
-                                                            :registration_year,
-                                                            :nep_program,
-                                                            :college_code,
-                                                            :college_name,
-                                                            :exam_category,
-                                                            :course_code,
-                                                            :course_paper_name
-                                                        )
-                                                    """)
+                try:
 
-                            sql_session.execute(statement = student_insertion_query, 
-                                                            params = {  
-                                                            "roll_no" : row["Roll No"] ,
-                                                            "registration_no" :  row[ "Registration No" ],
-                                                            "registration_year" : row[ "Registration Year" ],
-                                                            "nep_program" : row [ "NEP program" ][:14].strip(),
-                                                            "college_code" :  row[ "College Code" ],
-                                                            "college_name" : row [ "College Name" ],
-                                                            "exam_category" : row[ "Exam Category" ],
-                                                            "course_code" : getattr(row, paper_code),
-                                                            "course_paper_name" : getattr(row, paper_name)
-                                                            }
+                    truncate_sql = sqltext(
+                                            """
+                                            TRUNCATE TABLE ALL_STUDENTS_DETAILS
+                                            """
+                                            ) 
+
+                    sql_session.execute(truncate_sql)
+
+                    upload_container.success("The truncation of Table all_student_details is complete.")
+
+                except sql_errors.DatabaseError as de:
+                    upload_container.error(de)
+
+                total_rows = len(original_dr)
+                all_student_upload_progress_bar = upload_container.progress(0.0, text = "Student Insertion Progress")
+
+                for indx, row in original_dr.iterrows():
+
+                    all_student_upload_progress_bar.progress(
+                                                                value = indx / total_rows, 
+                                                                text = "Student Insertion Progress"
                                                             )
-                         
+
+                    for paper_code, paper_name in cdr.subject_name_dict.items():
+                        try:
+
+
+                            if pd.notna(row[paper_code])  :
+
+                                student_insertion_query = sqltext("""
+                                                            INSERT INTO ALL_STUDENTS_DETAILS
+                                                            (
+                                                                ROLL_NO,
+                                                                REGISTRATION_NO,
+                                                                REGISTRATION_YEAR,
+                                                                NEP_Program,
+                                                                COLLEGE_CODE,
+                                                                COLLEGE_NAME,
+                                                                EXAM_CATEGORY,
+                                                                COURSE_CODE,
+                                                                COURSE_PAPER_NAME
+                                                            )
+                                                            VALUES 
+                                                            (
+                                                                :roll_no,
+                                                                :registration_no,
+                                                                :registration_year,
+                                                                :nep_program,
+                                                                :college_code,
+                                                                :college_name,
+                                                                :exam_category,
+                                                                :course_code,
+                                                                :course_paper_name
+                                                            )
+                                                        """)
+
+                                sql_session.execute(statement = student_insertion_query, 
+                                                                params = {  
+                                                                "roll_no" : row["Roll No"] ,
+                                                                "registration_no" :  row[ "Registration No" ],
+                                                                "registration_year" : row[ "Registration Year" ],
+                                                                "nep_program" : row [ "NEP program" ][:14].strip(),
+                                                                "college_code" :  row[ "College Code" ],
+                                                                "college_name" : row [ "College Name" ],
+                                                                "exam_category" : row[ "Exam Category" ],
+                                                                "course_code" : getattr(row, paper_code),
+                                                                "course_paper_name" : getattr(row, paper_name)
+                                                                }
+                                                                )
+                            
+                            
+                        except sql_errors.IntegrityError as ie:
+                            upload_container.error(ie)
+
+
+                sql_session.commit()
+                upload_container.success("All Student Details are inserted.")
+
+
+                try:
+
+                    grouping_query = sqltext(
+                                        """
+                                        SELECT  college_code, 
+                                                course_code, 
+                                                exam_category, 
+                                                nep_program, 
+                                                roll_no
+                                        FROM all_students_details
+                                        ORDER BY college_code, 
+                                                course_code,
+                                                exam_category, 
+                                                nep_program, 
+                                                roll_no
+                                        """
+                                            )
+
+                    grouping_result_set = sql_session(
+                                                        statement = grouping_query,
+
+                                                    )
+                    group_serial_no_insertion_progress = upload_container.progress( 
+                                                            value = 0.0,
+                                                            text = 
+                                                            "Assigning student's serial no in progress"
+                                                            )
+
+                    no_of_all_students = grouping_result_set.rowcount
+                    no_of_students_processed = 0
+                    
+                    previous_nep_program = ""
+                    serial_number_in_a_group = 0
+
+                    for row in grouping_result_set:
+
+                        group_serial_no_insertion_progress.progress(
+                                            value = no_of_students_processed / no_of_all_students,
+                                            text = 
+                                            "Assigning student's serial no in progress"
+                                            )
+
+                        no_of_students_processed += 1
+
+                        if previous_nep_program != row[3]:
+                            serial_number_in_a_group = 1
+                        else:
+                            serial_number_in_a_group += 1
+                            
+
+                        insert_serial_number_query = sqltext(
+                                                            """
+                                                            UPDATE all_students_details
+                                                            SET serial_no_in_group = :indx
+                                                            WHERE   college_code = :college_code AND 
+                                                                    exam_category  = :exam_category AND
+                                                                    nep_program = :nep_program AND
+                                                                    course_code = :course_code AND
+                                                                    roll_no = :roll_no 
+                                                            """
+                                                            )   
+
+
+                        sql_session.execute(
+                                            statement = insert_serial_number_query,
+                                            params = {
+                                                        "college_code" : row[0],
+                                                        "course_code" : row[1],
+                                                        "exam_category" : row[2],
+                                                        "nep_program" : row[3],
+                                                        "roll_no" : row[4]
+                                                        }
+                                            )   
+
+                    sql_session.commit()
+
+                    upload_container.success("Assigning Serial No to students in done.")                  
+
+                            
+
                         
-                    except sql_errors.IntegrityError as ie:
-                         upload_container.error(ie)
 
 
-            sql_session.commit()
-            upload_container.success("All Student Details are inserted.")
-            
+
+                except sql_errors.DatabaseError as de:
+                    st.error(de)
+                
 
 
             
