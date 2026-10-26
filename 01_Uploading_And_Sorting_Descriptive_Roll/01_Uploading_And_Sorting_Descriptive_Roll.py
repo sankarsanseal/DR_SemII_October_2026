@@ -52,6 +52,11 @@ dr_uploaded_status = dr_upload_form.form_submit_button(label = "Upload the Descr
                                                                 " (DR) and Generate the sorted DR", 
                                                        width =  "stretch")
 
+#
+#
+#       Upload Excel File
+#
+#
 
 if dr_uploaded_status:
 
@@ -72,7 +77,11 @@ if dr_uploaded_status:
 
     except IOError as ie:
         upload_container.error(ie)
-
+#
+#
+#   Database Connection Established
+#
+#
 
     try:
         conn_neon = st.connection(   
@@ -106,7 +115,14 @@ if dr_uploaded_status:
                 except sql_errors.DatabaseError as de:
                     upload_container.error(de)
 
-            
+################################################################################           
+#
+#
+#      Segrigating by Course Type like Major, Minor, AEC etc. 
+#
+#
+################################################################################
+
             for subj_type, full_column_name in cdr.subject_type_dict.items():
                 
                 subj_type_sorted_df = cdr.return_subject_type_based_student_details(
@@ -132,10 +148,24 @@ if dr_uploaded_status:
                         upload_container.error(de)
 
                     try:
+                        params_dict_list = []
 
                         for indx, row in subj_type_sorted_df.iterrows():
 
-                            insert_query = sqltext(
+                            params_dict_list.append(
+                                                        {
+                                                                        "code" : row[full_column_name],
+                                                                        "paper_name" : row[cdr.subject_name_dict[full_column_name]],
+                                                                        "no_of_years" : row["NEP program"][:14].strip(),
+                                                                        "college_code" : row["College Code"],
+                                                                        "college_name" : row["College Name"],
+                                                                        "exam_category" : row["Exam Category"],
+                                                                        "student_count" : row["Roll No"] ,
+                                                        }
+
+                                                    )
+
+                        insert_query = sqltext(
                                                     f""" INSERT INTO {subj_type}_student_count
                                                     ( {subj_type}_course_code,
                                                         {subj_type}_course_paper_name,
@@ -158,15 +188,10 @@ if dr_uploaded_status:
                                                 )
 
 
-                            sql_session.execute(insert_query, params= {
-                                                                        "code" : row[full_column_name],
-                                                                        "paper_name" : row[cdr.subject_name_dict[full_column_name]],
-                                                                        "no_of_years" : row["NEP program"][:14].strip(),
-                                                                        "college_code" : row["College Code"],
-                                                                        "college_name" : row["College Name"],
-                                                                        "exam_category" : row["Exam Category"],
-                                                                        "student_count" : row["Roll No"] ,
-                                                                        })
+                        sql_session.execute(    
+                                                insert_query, 
+                                                params= params_dict_list,
+                                            )
 
                         sql_session.commit()
 
@@ -197,6 +222,15 @@ if dr_uploaded_status:
                     except sql_errors.UniqueViolation as de:
                         st.error(de)
 
+################################################################################
+#
+#   
+#       Insertion Of Students Records
+#
+#
+################################################################################
+
+
 
             with conn_neon.session as sql_session:
 
@@ -218,6 +252,8 @@ if dr_uploaded_status:
                 total_rows = len(original_dr)
                 all_student_upload_progress_bar = upload_container.progress(0.0, text = "Student Insertion Progress")
 
+                params_dict_list = []
+
                 for indx, row in original_dr.iterrows():
 
                     all_student_upload_progress_bar.progress(
@@ -226,12 +262,26 @@ if dr_uploaded_status:
                                                             )
 
                     for paper_code, paper_name in cdr.subject_name_dict.items():
-                        try:
 
 
-                            if pd.notna(row[paper_code])  :
+                        if pd.notna(row[paper_code])  :
 
-                                student_insertion_query = sqltext("""
+
+                            params_dict_list.append({  
+                                                            "roll_no" : row["Roll No"] ,
+                                                            "registration_no" :  row[ "Registration No" ],
+                                                            "registration_year" : row[ "Registration Year" ],
+                                                            "nep_program" : row [ "NEP program" ][:14].strip(),
+                                                            "college_code" :  row[ "College Code" ],
+                                                            "college_name" : row [ "College Name" ],
+                                                            "exam_category" : row[ "Exam Category" ],
+                                                            "course_code" : getattr(row, paper_code),
+                                                            "course_paper_name" : getattr(row, paper_name)
+                                                            }
+                                                    )
+                try:
+
+                    student_insertion_query = sqltext("""
                                                             INSERT INTO ALL_STUDENTS_DETAILS
                                                             (
                                                                 ROLL_NO,
@@ -258,28 +308,24 @@ if dr_uploaded_status:
                                                             )
                                                         """)
 
-                                sql_session.execute(statement = student_insertion_query, 
-                                                                params = {  
-                                                                "roll_no" : row["Roll No"] ,
-                                                                "registration_no" :  row[ "Registration No" ],
-                                                                "registration_year" : row[ "Registration Year" ],
-                                                                "nep_program" : row [ "NEP program" ][:14].strip(),
-                                                                "college_code" :  row[ "College Code" ],
-                                                                "college_name" : row [ "College Name" ],
-                                                                "exam_category" : row[ "Exam Category" ],
-                                                                "course_code" : getattr(row, paper_code),
-                                                                "course_paper_name" : getattr(row, paper_name)
-                                                                }
-                                                                )
+                    sql_session.execute(
+                                            statement = student_insertion_query, 
+                                            params = params_dict_list,
+                                        )                                                                
                             
+                    sql_session.commit()
+                    upload_container.success("All Student Details are inserted.")
                             
-                        except sql_errors.IntegrityError as ie:
-                            upload_container.error(ie)
+                except sql_errors.IntegrityError as ie:
+                    upload_container.error(ie)
 
-
-                sql_session.commit()
-                upload_container.success("All Student Details are inserted.")
-
+################################################################################
+#
+#
+#       Updating the Serial Number for Students
+#
+#
+################################################################################
 
                 try:
 
@@ -287,19 +333,19 @@ if dr_uploaded_status:
                                         """
                                         SELECT  college_code, 
                                                 course_code, 
-                                                exam_category, 
                                                 nep_program, 
+                                                exam_category, 
                                                 roll_no
                                         FROM all_students_details
                                         ORDER BY college_code, 
                                                 course_code,
-                                                exam_category, 
                                                 nep_program, 
+                                                exam_category, 
                                                 roll_no
                                         """
                                             )
 
-                    grouping_result_set = sql_session(
+                    grouping_result_set = sql_session.execute(
                                                         statement = grouping_query,
 
                                                     )
@@ -315,7 +361,9 @@ if dr_uploaded_status:
                     previous_nep_program = ""
                     serial_number_in_a_group = 0
 
-                    for row in grouping_result_set:
+                    params_dict_list = []
+
+                    for row in grouping_result_set.fetchall():
 
                         group_serial_no_insertion_progress.progress(
                                             value = no_of_students_processed / no_of_all_students,
@@ -325,52 +373,47 @@ if dr_uploaded_status:
 
                         no_of_students_processed += 1
 
-                        if previous_nep_program != row[3]:
+                        if previous_nep_program != row[2]:
                             serial_number_in_a_group = 1
                         else:
                             serial_number_in_a_group += 1
+                        previous_nep_program = row[2]
+
+                        params_dict_list.append({
+                                                        "indx" : serial_number_in_a_group,
+                                                        "college_code" : row[0],
+                                                        "course_code" : row[1],
+                                                        "nep_program" : row[2],
+                                                        "exam_category" : row[3],
+                                                        "roll_no" : row[4]
+                                                        })
                             
 
-                        insert_serial_number_query = sqltext(
+                    insert_serial_number_query = sqltext(
                                                             """
                                                             UPDATE all_students_details
                                                             SET serial_no_in_group = :indx
                                                             WHERE   college_code = :college_code AND 
-                                                                    exam_category  = :exam_category AND
-                                                                    nep_program = :nep_program AND
                                                                     course_code = :course_code AND
+                                                                    nep_program = :nep_program AND
+                                                                    exam_category  = :exam_category AND
                                                                     roll_no = :roll_no 
                                                             """
                                                             )   
 
 
-                        sql_session.execute(
+                    sql_session.execute(
                                             statement = insert_serial_number_query,
-                                            params = {
-                                                        "college_code" : row[0],
-                                                        "course_code" : row[1],
-                                                        "exam_category" : row[2],
-                                                        "nep_program" : row[3],
-                                                        "roll_no" : row[4]
-                                                        }
-                                            )   
+                                            params = params_dict_list, 
+                                        )   
 
                     sql_session.commit()
 
                     upload_container.success("Assigning Serial No to students in done.")                  
 
-                            
-
-                        
-
-
-
                 except sql_errors.DatabaseError as de:
                     st.error(de)
-                
-
-
-            
+ 
 
     except ConnectionError as ce:
 
