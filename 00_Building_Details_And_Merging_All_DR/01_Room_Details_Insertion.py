@@ -18,7 +18,7 @@ room_details_insertion_form = room_details_insertion_container.form(
                                         border = True,
                                         )
 
-col1, col2, col3, col4, col5, col6 = room_details_insertion_form.columns(4, 
+col1, col2, col3, col4, col5, col6 = room_details_insertion_form.columns(6, 
                                                             gap = "xxsmall", 
                                                             )
 
@@ -55,13 +55,13 @@ floor_no = col3.selectbox(
                             )
 
 no_of_benches_in_a_room = col4.number_input( label = "Enter the number of Benches",
-                                            min_value = 5 
+                                            min_value = 5, 
                                           placeholder = 0,
                                           key ="no_of_bench_in_a_room",
                                           ) 
 
 no_of_students_on_a_bench = col5.number_input(
-                                                labels = "The number of students per bench",
+                                                label = "The number of students per bench",
                                               min_value = 1,
                                               max_value = 3,
                                               placeholder = 0,
@@ -148,21 +148,32 @@ if room_details_insertion_submit_button:
                 no_of_rows_updated = sql_session.execute( statement = room_details_insertion_update_sql,
                                                         params = params_dict_list, 
                                                         ) 
-
+                no_of_rows_inserted = None
                 if no_of_rows_updated.rowcount != 1 :
 
                     no_of_rows_inserted = sql_session.execute( 
                                                                 statement = room_details_insertion_insert_sql,
                                                                 params = params_dict_list,
                                                             )
+                        
 
-                if (no_of_rows_updated == 1) or (no_of_rows_inserted == 1):
+                if (no_of_rows_updated.rowcount == 1) or (no_of_rows_inserted.rowcount == 1):
                     sql_session.commit()
-                    room_details_insertion_container.success(
+
+                    if no_of_rows_inserted is not None and no_of_rows_inserted.rowcount == 1:
+
+                        room_details_insertion_container.success(
                                                                 f"Room No: {room_no} "
                                                                 f"in the {building_name} details are"
-                                                                "inserted."
-                                                                ) 
+                                                                " inserted." 
+                                                                )
+                    elif no_of_rows_updated.rowcount == 1:
+                        room_details_insertion_container.success(
+                                                                f"Room No: {room_no} "
+                                                                f"in the {building_name} details are"
+                                                                " updated." 
+                                                                )
+
             except sql_errors.IntegrityError as ie:
                 room_details_insertion_container.error(ie)
 
@@ -176,8 +187,7 @@ if room_details_insertion_submit_button:
 
 
     except (        sql_errors.ConnectionException, 
-                    sql_errors.ConnectionFailure, 
-                    sql_errors.ConnectionError, 
+                    sql_errors.ConnectionFailure,  
                     sql_errors.ConnectionTimeout,
             ) as de:
         room_details_insertion_container.error(de)
