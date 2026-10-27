@@ -225,7 +225,7 @@ if dr_uploaded_status:
 ################################################################################
 #
 #   
-#       Insertion Of Students Records
+#       Insertion Of Students' Records
 #
 #
 ################################################################################
@@ -271,6 +271,7 @@ if dr_uploaded_status:
                                                             "roll_no" : row["Roll No"] ,
                                                             "registration_no" :  row[ "Registration No" ],
                                                             "registration_year" : row[ "Registration Year" ],
+                                                            "student_name" : row["Student Name"],
                                                             "nep_program" : row [ "NEP program" ][:14].strip(),
                                                             "college_code" :  row[ "College Code" ],
                                                             "college_name" : row [ "College Name" ],
@@ -299,6 +300,7 @@ if dr_uploaded_status:
                                                                 :roll_no,
                                                                 :registration_no,
                                                                 :registration_year,
+                                                                :student_name,
                                                                 :nep_program,
                                                                 :college_code,
                                                                 :college_name,
