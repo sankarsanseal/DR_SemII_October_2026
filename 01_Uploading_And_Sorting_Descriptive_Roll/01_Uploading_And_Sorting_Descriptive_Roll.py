@@ -288,6 +288,7 @@ if dr_uploaded_status:
                                                                 ROLL_NO,
                                                                 REGISTRATION_NO,
                                                                 REGISTRATION_YEAR,
+                                                                STUDENT_NAME,
                                                                 NEP_Program,
                                                                 COLLEGE_CODE,
                                                                 COLLEGE_NAME,
