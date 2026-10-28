@@ -23,7 +23,7 @@ upload_container = st.container(
                                 )
 
 
-upload_container.title("Upload a Single College or A Multi-College Combined spreadsheet")
+upload_container.title("Upload a Single College or a Multi-College Combined spreadsheet")
 
 ################################################################################ 
 #
@@ -103,31 +103,33 @@ if dr_uploaded_status:
                                     )
 
 
-            with conn_neon.session as truncation_session:
+            with conn_neon.session as drop_session:
 
                 try:
-                    truncate_sql = sqltext(
+                    drop_sql = sqltext(
                                         """
-                                        TRUNCATE TABLE exam_dates;
+                                        DROP TABLE exam_dates;
                                         """
                                         )
 
-                    truncation_status = truncation_session.execute(truncate_sql)
+                    drop_status = drop_session.execute(drop_sql)
 
-                    truncation_session.commit()
+                    drop_session.commit()
 
                     upload_container.success("The truncation of Table exam_dates is"
-                                             " successful with status {0}.".format(truncation_status.rowcount))
+                                             " successful with status {0}.".format(drop_status.rowcount))
                 except sql_errors.DatabaseError as de:
                     upload_container.error(de)
 
 ################################################################################           
 #
 #
-#      Segrigating by Course Type like Major, Minor, AEC etc. 
+#      Segregating by Course Type like Major, Minor, AEC etc. 
 #
 #
 ################################################################################
+
+        with conn_neon.session as sql_session:
 
             for subj_type, full_column_name in cdr.subject_type_dict.items():
                 
@@ -138,95 +140,94 @@ if dr_uploaded_status:
                                                                                     *cdr.student_related_columns[3:],
                                                                                     )
 
-                with conn_neon.session as sql_session:
 
-                    truncate_sql = sqltext(f"""TRUNCATE TABLE {subj_type}_STUDENT_COUNT;""")
+                truncate_sql = sqltext(f"""TRUNCATE TABLE {subj_type}_STUDENT_COUNT;""")
 
-                    try:
-                        truncation_status = sql_session.execute(truncate_sql)
+                try:
+                    truncation_status = sql_session.execute(truncate_sql)
 
-                        sql_session.commit()
+                    sql_session.commit()
 
-                        upload_container.success(f"Truncation of Table {subj_type}_count" 
-                                                 " is successful with status {0}.".format(truncation_status.rowcount))
-                    except sql_errors.DatabaseError as de:
+                    upload_container.success(f"Truncation of Table {subj_type}_count" 
+                                                " is successful with status {0}.".format(truncation_status.rowcount))
+                except sql_errors.DatabaseError as de:
 
-                        upload_container.error(de)
+                    upload_container.error(de)
 
-                    try:
-                        params_dict_list = []
+                try:
+                    params_dict_list = []
 
-                        for indx, row in subj_type_sorted_df.iterrows():
+                    for indx, row in subj_type_sorted_df.iterrows():
 
-                            params_dict_list.append(
-                                                        {
-                                                                        "code" : row[full_column_name],
-                                                                        "paper_name" : row[cdr.subject_name_dict[full_column_name]],
-                                                                        "no_of_years" : row["NEP program"][:14].strip(),
-                                                                        "college_code" : row["College Code"],
-                                                                        "college_name" : row["College Name"],
-                                                                        "exam_category" : row["Exam Category"],
-                                                                        "student_count" : row["Roll No"] ,
-                                                        }
+                        params_dict_list.append(
+                                                    {
+                                                                    "code" : row[full_column_name],
+                                                                    "paper_name" : row[cdr.subject_name_dict[full_column_name]],
+                                                                    "no_of_years" : row["NEP program"][:14].strip(),
+                                                                    "college_code" : row["College Code"],
+                                                                    "college_name" : row["College Name"],
+                                                                    "exam_category" : row["Exam Category"],
+                                                                    "student_count" : row["Roll No"] ,
+                                                    }
 
-                                                    )
-
-                        insert_query = sqltext(
-                                                    f""" INSERT INTO {subj_type}_student_count
-                                                    ( {subj_type}_course_code,
-                                                        {subj_type}_course_paper_name,
-                                                        {subj_type}_no_of_years,
-                                                        {subj_type}_college_code,
-                                                        {subj_type}_college_name,
-                                                        {subj_type}_exam_category,
-                                                        {subj_type}_roll_count
-                                                    ) 
-                                                    VALUES(
-                                                    :code, 
-                                                    :paper_name,
-                                                    :no_of_years,
-                                                    :college_code,
-                                                    :college_name,
-                                                    :exam_category,
-                                                    :student_count
-                                                    );
-                                                    """
                                                 )
 
-
-                        sql_session.execute(    
-                                                insert_query, 
-                                                params= params_dict_list,
+                    insert_query = sqltext(
+                                                f""" INSERT INTO {subj_type}_student_count
+                                                ( {subj_type}_course_code,
+                                                    {subj_type}_course_paper_name,
+                                                    {subj_type}_no_of_years,
+                                                    {subj_type}_college_code,
+                                                    {subj_type}_college_name,
+                                                    {subj_type}_exam_category,
+                                                    {subj_type}_roll_count
+                                                ) 
+                                                VALUES(
+                                                :code, 
+                                                :paper_name,
+                                                :no_of_years,
+                                                :college_code,
+                                                :college_name,
+                                                :exam_category,
+                                                :student_count
+                                                );
+                                                """
                                             )
 
-                        sql_session.commit()
 
-                        upload_container.success(f"Insertion to Table {subj_type}_student_count is complete.")
-                    except ValueError as ve:
-                        upload_container.error(ve)
+                    sql_session.execute(    
+                                            insert_query, 
+                                            params= params_dict_list,
+                                        )
 
+                    sql_session.commit()
 
-
-                    try:
-
-                        insert_exam_course_code_sql = sqltext("""
-                                                                INSERT INTO exam_dates (exam_course_code)
-                                                                SELECT DISTINCT {0}_COURSE_CODE FROM {0}_STUDENT_COUNT
-                                                        """.format(subj_type))
+                    upload_container.success(f"Insertion to Table {subj_type}_student_count is complete.")
+                except ValueError as ve:
+                    upload_container.error(ve)
 
 
-                        insertion_status = sql_session.execute(insert_exam_course_code_sql)
+                
+                try:
 
-                        sql_session.commit()
+                    insert_exam_course_code_sql = sqltext("""
+                                                            INSERT INTO exam_dates (exam_course_code)
+                                                            SELECT DISTINCT {0}_COURSE_CODE FROM {0}_STUDENT_COUNT
+                                                    """.format(subj_type))
 
-                        upload_container.success(
-                                                    body = "Insertion to Table EXAM_DATES is"
-                                                            " complete with insertion status {0}."
-                                                            .format(insertion_status.rowcount)
-                                                            ,
-                                                    title = f"{subj_type.upper()}")
-                    except sql_errors.UniqueViolation as de:
-                        st.error(de)
+
+                    insertion_status = sql_session.execute(insert_exam_course_code_sql)
+
+                    sql_session.commit()
+
+                    upload_container.success(
+                                                body = "Insertion to Table EXAM_DATES is"
+                                                        " complete with insertion status {0}."
+                                                        .format(insertion_status.rowcount)
+                                                        ,
+                                                title = f"{subj_type.upper()}")
+                except sql_errors.UniqueViolation as de:
+                    st.error(de)
 
 ################################################################################
 #
