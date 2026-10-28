@@ -8,14 +8,29 @@ from sqlalchemy import text as sqltext
 
 subject_type_data_distribution_container = st.container(
                                         border = True, 
-                                        key = "Major Subjects and Their Student Count",
+                                        key = "Subjects_and_Their_Student_Count",
                                         )
 
 col1, col2 = subject_type_data_distribution_container.columns(2, gap = "xxsmall")
 
+conn_sql = st.connection(   name = "neon", 
+                                type ="sql", 
+                                ttl = 1,
+                            )
+
+subject_course_type = conn_sql.query(
+    sql = """
+            SELECT course_type  
+            FROM exam_subject_type 
+            ORDER BY course_type
+        """,
+    ttl = 1,
+) 
+
+
 selected_subject_type = col1.selectbox( 
                                                     label = "Select the Course Type", 
-                                                   options = [course_type.upper() for course_type in cdr.subject_type_dict.keys()], 
+                                                   options = subject_course_type["course_type"].to_list(), 
                                                    index = None,
                                                    key= "Course_Type_Selection"
                                                    )
@@ -27,10 +42,6 @@ selected_no_years_of_subject = col2.selectbox(
                                               index = None,
                                               )
 if selected_subject_type is not None:
-    conn_sql = st.connection(   name = "neon", 
-                                type ="sql", 
-                                ttl = "1m"
-                            )
 
     
     sql_query = """

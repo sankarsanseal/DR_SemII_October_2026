@@ -22,12 +22,16 @@ upload_container = st.container(
                                 key = "upload_and_sort_dr_container,",
                                 )
 
-# 
-# 
+
+upload_container.title("Upload a Single College or A Multi-College Combined spreadsheet")
+
+################################################################################ 
+#
+#  
 #   DR Uploader Form 
 # 
 # 
-# 
+################################################################################ 
 
 dr_upload_form = upload_container.form( 
                         key = "file_uploader_form", 
@@ -52,11 +56,13 @@ dr_uploaded_status = dr_upload_form.form_submit_button(label = "Upload the Descr
                                                                 " (DR) and Generate the sorted DR", 
                                                        width =  "stretch")
 
+################################################################################
 #
 #
 #       Upload Excel File
 #
 #
+################################################################################
 
 if dr_uploaded_status:
 

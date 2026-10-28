@@ -15,7 +15,7 @@ exam_details_submission_form = exam_details_enter_container.form(
                                                                 )
 
 col1, col2 , col3, col4 = exam_details_submission_form.columns( 
-                                                        spec = 4,
+                                                        spec = [1,1.5,1,2],
                                                         gap = "xxsmall",
                                                         # border = True,
                                                         )
@@ -69,7 +69,7 @@ exam_detail_submission_button = exam_details_submission_form.form_submit_button(
                                 )
 
 
-if exam_detail_submission_button:
+if exam_detail_submission_button and exam_sem is not None and exam_month is not None:
 
     exam_details_update_sql = sqltext(
                                         """
@@ -217,7 +217,7 @@ exam_subject_type_and_column_form = exam_details_enter_container.form(
 )
 
 col1, col2, col3 = exam_subject_type_and_column_form.columns(
-    spec = 3,
+    spec = [1,2,2],
     gap = "xxsmall",
 )
 
@@ -235,24 +235,30 @@ subject_course_type  = col1.text_input(
 
 subject_course_type_delete_flag = col1.checkbox(
     label = "Delete Subject Type",
-    key = "Subject_Type_Delete_Checkbox" 
+    key = "Subject_Type_Delete_Checkbox",
 )
 
 
 column_name_with_course_code = col2.text_input(
     label = "Column Header with Course Code",
+    value = "NA",
+    help = "provide na for deletion",
     key = "Column_Name_With_Course_code",
+    required = True,
 )
 
 
 column_name_with_course_paper_name = col3.text_input(
     label = "Column Header with Course Paper Name",
-    key = "Column_Name_Wiith_Course_Paper_Name"
+    value = "NA",
+    help = "provide na for deletion",
+    key = "Column_Name_Wiith_Course_Paper_Name",
+    required = True,
 )
 
 
 exam_subject_type_and_column_form_submission = exam_subject_type_and_column_form.form_submit_button(
-    label = "Click to Submit Subject Sourse Type",
+    label = "Click to Submit Subject Source Type",
     width = "stretch", 
     key = "Exam_Subject_Type_And_Column_Submission"
 )
@@ -353,20 +359,49 @@ try:
 
 
 
-                if exam_subject_type_and_column_form_submission and not subject_course_type_delete_flag:
+                if exam_subject_type_and_column_form_submission  :
 
-                    no_of_rows_inserted_for_subject_course_code = exam_subject_type_session.execute(
-                        statement = subject_type_insert_sql,
-                        params = params_dict_list,
-                    )
+                    if not subject_course_type_delete_flag :
+                        no_of_rows_updated_for_subject_course_code = exam_subject_type_session.execute(
+                            statement =  subject_type_update_sql,
+                            params = params_dict_list,
+                        )
 
-                    if no_of_rows_inserted_for_subject_course_code.rowcount == 1:
-                        exam_subject_type_session.commit()
+                        if no_of_rows_updated_for_subject_course_code.rowcount == 0:
+                            no_of_rows_inserted_for_subject_course_code = exam_subject_type_session.execute(
+                                statement = subject_type_insert_sql,
+                                params = params_dict_list,
+                            )
 
-                        exam_details_enter_container.success(
-                                                                f" A row for {subject_course_type}"
-                                                                f" is inserted with status {no_of_rows_inserted_for_subject_course_code.rowcount}."
-                                                                )
+                        if ((no_of_rows_updated_for_subject_course_code.rowcount == 1) or 
+                                    (no_of_rows_inserted_for_subject_course_code.rowcount == 1)):
+
+                            exam_subject_type_session.commit()
+
+                            exam_details_enter_container.success(
+                                                                    f" A row for {subject_course_type}"
+                                                                    + (f" is updated with status {no_of_rows_updated_for_subject_course_code.rowcount}." 
+                                                                     if  no_of_rows_updated_for_subject_course_code.rowcount == 1 else  
+                                                                    f" is inserted with status {no_of_rows_inserted_for_subject_course_code.rowcount}." 
+                                                                    if no_of_rows_inserted_for_subject_course_code.rowcount == 1 else "with some issue." 
+                                                                    ) 
+                                                                    )
+                    else:
+
+                        no_of_rows_deleted_for_subject_course_code = exam_subject_type_session.execute(
+                            statement = subject_type_delete_sql,
+                            params = {
+                                "course_type" : subject_course_type,
+                                }
+                        )
+
+                        if no_of_rows_deleted_for_subject_course_code.rowcount == 1:
+
+                            exam_subject_type_session.commit()
+
+                            exam_details_enter_container.success(f"A row for {subject_course_type} is deleted.")
+
+                    
 
                     
 
@@ -393,5 +428,11 @@ all_exam_subject_type_dataframe = exam_details_enter_container.dataframe(
     data = all_exam_subject_type_df,
     height = "content",
     width = "stretch",
+    hide_index = True,
+    column_config = {
+        "course_type" : "Course Type",
+        "course_code_column_header" : "Column With Course Code",
+        "course_paper_name_column_header" : "Column Header with Course Paper Name",
+    },
     key = "All_Exam_Subject_Type_Details",
 )
