@@ -363,7 +363,7 @@ try:
                     if no_of_rows_inserted_for_subject_course_code.rowcount == 1:
                         exam_subject_type_session.commit()
 
-                        exam_details_enter_container.seccess(
+                        exam_details_enter_container.success(
                                                                 f" A row for {subject_course_type}"
                                                                 f" is inserted with status {no_of_rows_inserted_for_subject_course_code.rowcount}."
                                                                 )
