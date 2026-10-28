@@ -22,6 +22,9 @@ st.sidebar.header("Examination of Semester {0}".format(st.session_state.exam_sem
 st.sidebar.header("Examination Month: {0}".format(st.session_state.exam_month))
 st.sidebar.header("Examination Year: {0}".format(st.session_state.exam_year))
 
+step_00_00 = st.Page( 
+                        page = "00_Building_Details_And_Merging_All_DR/00_Exam_Details_Insertion.py",
+                        title = "00. Exam Details Insertion")
 
 step_00_01 = st.Page(page = "00_Building_Details_And_Merging_All_DR/01_Room_Details_Insertion.py",
                         title = "01. Insert Room Details for Examination",
