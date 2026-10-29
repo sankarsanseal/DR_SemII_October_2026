@@ -325,7 +325,7 @@ try:
 
         params_dict_list = [
             {
-            "course_type" : subject_course_type,
+            "course_type" : subject_course_type.upper(),
             "course_code" : column_name_with_course_code,
             "course_paper_name" : column_name_with_course_paper_name,
             },

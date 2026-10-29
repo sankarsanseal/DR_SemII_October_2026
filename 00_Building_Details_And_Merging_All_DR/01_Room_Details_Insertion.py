@@ -28,6 +28,12 @@ room_no = col1.text_input(
                             key = "room_no_input_text_field",
                             required = True,
                             )
+
+room_details_delete_checkbox = col1.checkbox(
+    label = "Check to delete the room details",
+    key = "Room_Details_Deletion_Checkbox"
+)
+
 building_name = col2.selectbox( 
                                 label = "Select the Building Name",
                                 options = [
@@ -91,6 +97,26 @@ if room_details_insertion_submit_button:
                                 ttl = 1, 
                                 )
 
+
+        room_details_create_table_sql = sqltext(
+                                        """
+                                            CREATE TABLE IF NOT EXISTS ROOM_DETAILS(
+                                                                ROOM_NO VARCHAR(10),
+                                                                BUILDING_NAME VARCHAR(100),
+                                                                FLOOR_NO VARCHAR(100),
+                                                                NO_OF_BENCHES INTEGER,
+                                                                NO_OF_STUDENTS_PER_BENCH INTEGER,
+                                                                REMARK VARCHAR(100),
+                                                                PRIMARY KEY (
+                                                                            ROOM_NO, 
+                                                                            BUILDING_NAME, 
+                                                                            FLOOR_NO
+                                                                            )
+                                                            )
+
+                                        """
+                                        )
+
         room_details_insertion_update_sql = sqltext(
                                                     """
                                                     UPDATE room_details
@@ -130,6 +156,16 @@ if room_details_insertion_submit_button:
                                                     """
                                                     )
 
+        room_details_deletion_sql = sqltext(
+            """
+                DELETE FROM room_details
+                WHERE 
+                room_no = :room_no AND
+                building_name = :building_name AND
+                floor_no = :floor_no
+            """
+        )    
+
         params_dict_list = [
                             {
                                 "room_no" : room_no,
@@ -142,53 +178,94 @@ if room_details_insertion_submit_button:
                             ]
 
         with conn_sql.session as sql_session:
+            try:
+                sql_session.execute(
+                    statement = room_details_create_table_sql,
+
+                    )
+
+                sql_session.commit()
+
+                room_details_insertion_container.success(
+                    body = "Entering Room_Details Table",
+                    title = "ROOM_DETAILS"
+                    )
+
+            except sql_errors.DatabaseError as de:
+                room_details_insertion_container.error(
+                    body = "Room_Details Table Creation Problem.",
+                    title = "ROOM_DETAILS",
+                )
 
             try:
 
-                no_of_rows_updated = sql_session.execute( statement = room_details_insertion_update_sql,
-                                                        params = params_dict_list, 
-                                                        ) 
-                no_of_rows_inserted = None
-                if no_of_rows_updated.rowcount != 1 :
+                if not room_details_delete_checkbox:
 
-                    no_of_rows_inserted = sql_session.execute( 
-                                                                statement = room_details_insertion_insert_sql,
-                                                                params = params_dict_list,
-                                                            )
-                        
+                    no_of_rows_updated = sql_session.execute( statement = room_details_insertion_update_sql,
+                                                            params = params_dict_list, 
+                                                            ) 
+                    no_of_rows_inserted = None
+                    if no_of_rows_updated.rowcount != 1 :
 
-                if (no_of_rows_updated.rowcount == 1) or (no_of_rows_inserted.rowcount == 1):
-                    sql_session.commit()
+                        no_of_rows_inserted = sql_session.execute( 
+                                                                    statement = room_details_insertion_insert_sql,
+                                                                    params = params_dict_list,
+                                                                )
+                            
 
-                    if no_of_rows_inserted is not None and no_of_rows_inserted.rowcount == 1:
+                    if (no_of_rows_updated.rowcount == 1) or (no_of_rows_inserted.rowcount == 1):
+                        sql_session.commit()
+
+                        if no_of_rows_inserted is not None and no_of_rows_inserted.rowcount == 1:
+
+                            room_details_insertion_container.success(
+                                                                    f"Room No: {room_no} "
+                                                                    f"in the {building_name} details are"
+                                                                    " inserted." 
+                                                                    )
+                        elif no_of_rows_updated.rowcount == 1:
+                            room_details_insertion_container.success(
+                                                                    f"Room No: {room_no} "
+                                                                    f"in the {building_name} details are"
+                                                                    " updated." 
+                                                                    )
+                else:
+
+                    no_of_deleted_rooms = sql_session.execute(
+                        statement = room_details_deletion_sql,
+                        params = params_dict_list,
+                    )
+
+                    if no_of_deleted_rooms.rowcount == 1:
+                        sql_session.commit()
 
                         room_details_insertion_container.success(
-                                                                f"Room No: {room_no} "
-                                                                f"in the {building_name} details are"
-                                                                " inserted." 
-                                                                )
-                    elif no_of_rows_updated.rowcount == 1:
-                        room_details_insertion_container.success(
-                                                                f"Room No: {room_no} "
-                                                                f"in the {building_name} details are"
-                                                                " updated." 
-                                                                )
+                            body = f"The details of room No: {room_no} is deleted.",
+                            title = "DELETION"
+                        )
 
             except sql_errors.IntegrityError as ie:
                 room_details_insertion_container.error(ie)
 
-            all_room_details_df = conn_sql.query("SELECT * FROM room_details", ttl = 1, )
-            room_details_all_room_dataframe = room_details_insertion_container.dataframe( 
-                                                                            data = all_room_details_df,
-                                                                            height = "content",
-                                                                            width = "stretch",
-                                                                            key = "All_Room_Details_Dataframe",
-                                                                            )
-
-
     except (        sql_errors.ConnectionException, 
-                    sql_errors.ConnectionFailure,  
-                    sql_errors.ConnectionTimeout,
-            ) as de:
+            sql_errors.ConnectionFailure,  
+            sql_errors.ConnectionTimeout,
+    ) as de:
         room_details_insertion_container.error(de)
+
+conn_sql = st.connection(
+    name = "neon",
+    type = SQLConnection,
+    )
+
+if conn_sql:
+    all_room_details_df = conn_sql.query("SELECT * FROM room_details", ttl = 1, )
+    room_details_all_room_dataframe = room_details_insertion_container.dataframe( 
+                                                                    data = all_room_details_df,
+                                                                    height = "content",
+                                                                    width = "stretch",
+                                                                    key = "All_Room_Details_Dataframe",
+                                                                    )
+
+
 
