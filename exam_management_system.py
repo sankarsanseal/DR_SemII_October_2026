@@ -119,7 +119,16 @@ step_01_02 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/02_Checki
 
 step_01_03 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/03_Setting_Examination_Date_And_Time.py",
                      title = "03. Insert the Exam Date and Timing")
-# step_01_04 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/04_serial.py", title = "serial")
+
+step_01_04 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/04_Assign_Room_No_To_Students.py", 
+                     title = "04. Assigning Room No to Students"
+                     )
+
+step_01_05 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/05_RoomWise_Student_Distribution.py",
+                     title = "05. Checking Room-Wise Student-Subject Distribution")
+
+step_01_06 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/06_SubjectWise_Student_Distribution.py",
+                     title = "06. Checking Subject-wise Student-Room Distribution")
 
 landing_page = st.navigation( pages = {
 
@@ -132,6 +141,9 @@ landing_page = st.navigation( pages = {
                                                         step_01_01, 
                                                         step_01_02,
                                                         step_01_03,
+                                                        step_01_04,
+                                                        step_01_05,
+                                                        step_01_06,
                 # step_01_04,
                                                         ],
 },

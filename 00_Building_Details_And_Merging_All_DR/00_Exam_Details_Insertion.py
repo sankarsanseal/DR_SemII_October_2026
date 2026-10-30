@@ -22,7 +22,7 @@ col1, col2 , col3, col4 = exam_details_submission_form.columns(
 
 exam_type  = col1.selectbox( 
                             label = "Select the Exam Type",
-                            options = ["UG", "PG"],
+                            options = ["IA","UG", "PG"],
                             index = 0,
                             key = "Exam_Type_Selection_Box"
                             )
