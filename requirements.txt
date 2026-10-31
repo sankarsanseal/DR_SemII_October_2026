@@ -8,3 +8,6 @@ psycopg2-binary
 psycopg[binary]
 gspread 
 gspread-dataframe
+reportlab
+fpdf2
+streamlit-pdf-viewer

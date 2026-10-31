@@ -102,6 +102,8 @@ st.sidebar.header("Examination of Semester {0}".format(st.session_state.exam_sem
 st.sidebar.header("Examination Month: {0}".format(st.session_state.exam_month))
 st.sidebar.header("Examination Year: {0}".format(st.session_state.exam_year))
 
+################################################################################
+################################################################################
 step_00_00 = st.Page( 
                         page = "00_Building_Details_And_Merging_All_DR/00_Exam_Details_Insertion.py",
                         title = "00. Exam Details Insertion")
@@ -130,6 +132,21 @@ step_01_05 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/05_RoomWi
 step_01_06 = st.Page(page = "01_Uploading_And_Sorting_Descriptive_Roll/06_SubjectWise_Student_Distribution.py",
                      title = "06. Checking Subject-wise Student-Room Distribution")
 
+################################################################################
+################################################################################
+
+step_02_01 = st.Page(page = "02_Generating_AttendanceSheet_LogSheet_TopSheet/01_Attendance_Sheet_Generation.py",
+                     title = "01. Attendance Sheet Generation")
+
+step_02_02 = st.Page(page = "02_Generating_AttendanceSheet_LogSheet_TopSheet/02_LogSheet_Generation.py",
+                     title = "02. Log Sheet Generation")
+
+step_02_03 = st.Page(page = "02_Generating_AttendanceSheet_LogSheet_TopSheet/03_TopSheet_Generation.py",
+                     title = "03. Top Sheet Generation")
+
+step_02_04 = st.Page(page = "02_Generating_AttendanceSheet_LogSheet_TopSheet/04_Marking_Absenetee_List.py",
+                     title = "04. Absentee List Marking")
+
 landing_page = st.navigation( pages = {
 
                                         "Step 00" : [
@@ -146,7 +163,18 @@ landing_page = st.navigation( pages = {
                                                         step_01_06,
                 # step_01_04,
                                                         ],
+
+                                        "Step 02" : [
+                                              step_02_01,
+                                              step_02_02,
+                                              step_02_03,
+                                        ],
+
+                                        "Step 03" : [
+                                              
+                                        ],
 },
+
 expanded = True,
 position = "sidebar"
 

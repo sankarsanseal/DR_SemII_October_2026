@@ -340,12 +340,25 @@ if dr_uploaded_status:
                             SERIAL_NO_IN_GROUP INTEGER,
                             ROOM_NO VARCHAR(10),
                             BUILDING_NAME VARCHAR(100),
+                            ABSENTEE_MARK VARCHAR(10),
                             PRIMARY KEY (
                                             ROLL_NO, 
                                             COLLEGE_CODE, 
                                             EXAM_CATEGORY, 
                                             COURSE_CODE
-                                        )
+                                        ),
+                            CONSTRAINT ALT_key_1 UNIQUE (
+                                            roll_no,
+                                            course_code,
+                                            college_code,
+                                            nep_program
+                                ),
+                            CONSTRAINT ALT_key_2 UNIQUE(
+                                                        course_code,
+                                                        nep_program, 
+                                                        exam_category, 
+                                                        roll_no
+                            )
                         )
                         """
                     )
