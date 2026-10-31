@@ -108,7 +108,7 @@ if conn_sql:
 
             nep_program_list = [row[0] for row in selected_nep_program_resultset.fetchall()]
 
-        select_nep_program = col3.selectbox(
+        selected_nep_program = col3.selectbox(
             label = "NEP Program",
             options = nep_program_list,
             index = None,
@@ -170,13 +170,21 @@ if conn_sql:
 
     selected_starting_serial_no = col4_4.number_input(
         label = "Starting Serial No",
+        min_value = 1,
+        max_value = 80,
+        value = 1,
+        step = 1,
         key = "Starting_Serial_No_Input",
         placeholder = "000",
     )
 
-    selected_end_serial_no = col4_5.number_input(
+    selected_ending_serial_no = col4_5.number_input(
         label = "Ending Serial No",
-        key = "Ending_Serial_No_Input",
+        key = "Ending_Serial_No_Input", 
+        min_value = 1,
+        max_value = 80,
+        value = 1,
+        step = 1,
         placeholder = "Greated than start serial no"
     )
 
@@ -187,6 +195,73 @@ if conn_sql:
         width = "stretch",
     )
 
+
+    if serial_no_assigning_form_button:
+
+        if (selected_course_code is not None and 
+            selected_college_code is not None and
+            selected_nep_program is not None and
+            selected_room is not None and
+            selected_building is not None and
+            selected_floor is not None and
+            selected_starting_serial_no is not None and
+            selected_ending_serial_no is not None):
+
+            if selected_starting_serial_no < selected_ending_serial_no:
+
+                serial_no_assigning_sql = sqltext(
+                    """
+                    UPDATE all_students_details
+                    SET 
+                    room_no = :room_no,
+                    building_name = :building_name
+                    WHERE 
+                    course_code = :course_code AND
+                    college_code = :college_code AND
+                    nep_program = :nep_program AND
+                    serial_no_in_group BETWEEN 
+                                        :starting_serial_no AND 
+                                        :ending_serial_no 
+                    """
+                )
+
+                params_dict_list =[
+                    {
+                        "course_code" : selected_course_code,
+                        "college_code":  selected_college_code,
+                        "nep_program" : selected_nep_program,
+                        "starting_serial_no" : selected_starting_serial_no,
+                        "ending_serial_no" : selected_ending_serial_no,
+                        "room_no" : selected_room,
+                        "building_name" : selected_building
+                    },
+                ]
+
+                with conn_sql.session as sql_session:
+
+                    try:
+
+                        serial_no_assigning_resultset = sql_session.execute(
+                                            statement = serial_no_assigning_sql,
+                                            params = params_dict_list,
+                        )
+
+
+                        if serial_no_assigning_resultset.rowcount > 0:
+
+                            sql_session.commit()
+
+                            update_container.success(
+                                    body = f"{serial_no_assigning_resultset.rowcount} students of {selected_nep_program}, are updated to room no. {selected_room}.",
+                                    title = selected_course_code,
+                            )
+
+                    except sql_errors.IntegrityError as ie:
+
+                        update_container.error(
+                            body = ie,
+                            title = selected_room,
+                        ) 
 
 
     
