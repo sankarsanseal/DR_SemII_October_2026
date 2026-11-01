@@ -5,6 +5,122 @@ from sqlalchemy import text as sqltext
 from streamlit.connections import SQLConnection
 
 
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
+def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
+    # 1. Setup document container with margins
+    doc = SimpleDocTemplate(
+        filename,
+        pagesize=A4,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+    story = []
+
+    # 2. Setup typography styles
+    styles = getSampleStyleSheet()
+    
+    # Custom style for the document title
+    title_style = ParagraphStyle(
+        "ReportTitle", 
+        parent=styles['Heading1'],
+        fontSize=20,
+        leading=24,
+        # textColor=colors.HexColor("#1A365D"),
+        spaceAfter=15
+    )
+    
+    # Custom styles for table cells to force automatic text wrapping
+    header_style = ParagraphStyle(
+        'TableHeader',
+        parent=styles['Normal'],
+        fontSize=11,
+        leading=14,
+        textColor=colors.whitesmoke,
+        fontName="Helvetica-Bold"
+    )
+    
+    body_style = ParagraphStyle(
+        'TableBody',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=13,
+        textColor=colors.HexColor("#2D3748")
+    )
+
+    # Add a title to the document flow
+    story.append(Paragraph('CHANDERNAGORE COLLEGE\n LOG SHEET', title_style))
+    story.append(Spacer(1, 10))
+
+    # 3. Define raw table data
+    headers = ["Roll No.s of Students Allotted to the Room", "Roll No of Absent Students",]
+    
+    # raw_rows = [
+    #     ["INV-001", "GigaBit Network Router Enterprise Pro", "Hardware", "45", "Optimal stock level. No reorder required."],
+    #     ["INV-002", "UltraWide 34-inch 4K Monitor", "Electronics", "12", "Low stock warning. Reorder threshold triggered."],
+    #     ["INV-003", "Ergonomic Mesh Office Chair v2", "Furniture", "85", "Overstocked. Temporary hold on new procurement orders."],
+    #     ["INV-004", "USB-C Dual Docking Station Hub", "Accessories", "3", "Critical level. Backorder requested immediately."],
+    #     ["INV-005", "Cat6e Shielded Ethernet Cable (100ft)", "Hardware", "150", "Optimal stock level. Moving steadily."],
+    # ]
+    
+    # Duplicate rows to demonstrate multi-page handling and repeated headers
+    # raw_rows = raw_rows * 6 
+
+    # 4. Wrap all string cell values in Paragraph components
+    formatted_data = []
+    
+    # Process headers
+    formatted_data.append([Paragraph(h, header_style) for h in headers])
+    
+    # Process body rows
+    # for row in data_rows:
+    formatted_data.append([Paragraph(cell, body_style) for cell in row])
+
+    # 5. Define column widths (Total width available on Letter page with 36pt margins = 540pt)
+    column_widths = [400, 100]
+
+    # 6. Initialize Table object
+    # repeatRows=1 ensures headers appear at the top of every new page
+    table = Table(formatted_data, colWidths=column_widths, repeatRows=1)
+
+    # 7. Apply structural and visual styles
+    table_style = TableStyle([
+        # Header configurations
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1A365D")),
+        ('ALIGN', (0, 0), (-1, 0), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        
+        # Grid line and border layouts
+        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor("#0D1B2A")),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+        
+        # Row padding configurations
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+    ])
+
+    # Dynamic styling rule: Add alternating light-grey rows for readability
+    for i in range(1, len(formatted_data)):
+        if i % 2 == 0:
+            table_style.add('BACKGROUND', (0, i), (-1, i), colors.HexColor("#F7FAFC"))
+
+    table.setStyle(table_style)
+    story.append(table)
+
+    # 8. Build document into file
+    doc.build(story)
+
+
 
 
 
@@ -108,6 +224,7 @@ if conn_sql:
                     )                
 
 
+    logsheet_content_string = ""
 
     if logsheet_form_submission_button and (selected_date is not None 
                                             and selected_time is not None 
@@ -153,11 +270,11 @@ if conn_sql:
                     ):
 
                     if len(group_header_list) > 0:
-                        st.write(", ".join(group_header_list))
-                        st.write("=", len(group_header_list))
+                        logsheet_content_string.append(", ".join(group_header_list))
+                        logsheet_content_string.append("=", len(group_header_list))
                         group_header_list = []
                     group_header_list.append(row[-1][-4:])
-                    st.write(row[0], row[1][:3], row[2], row[-1][:8], )
+                    logsheet_content_string.append(" ".join((row[0], row[1][:3], row[2], row[-1][:8], )))
                 else:
                     group_header_list.append(row[-1][-4:])
 
@@ -166,5 +283,18 @@ if conn_sql:
                 previous_exam_category = row[2]
                 previous_roll_no_prefix = row[-1][:8]
             else:
-                st.write(", ".join(group_header_list))
-                st.write("=", len(group_header_list))
+                logsheet_content_string.append(", ".join(group_header_list))
+                logsheet_content_string.append("=", len(group_header_list))
+
+
+    generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
+                       data = [logsheet_content_string, []])
+
+
+
+    pdf_display = logsheet_container.pdf( 
+        data = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
+        
+        )
+
+

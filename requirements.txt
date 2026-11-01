@@ -11,3 +11,4 @@ gspread-dataframe
 reportlab
 fpdf2
 streamlit-pdf-viewer
+streamlit[pdf]
