@@ -121,7 +121,9 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
     doc.build(story)
 
 
-
+selected_room = None
+selected_date = None
+selected_time = None
 
 
 logsheet_container = st.container(
