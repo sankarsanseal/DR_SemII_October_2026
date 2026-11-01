@@ -276,7 +276,7 @@ if conn_sql:
                         logsheet_content_string += ("=", len(group_header_list))
                         group_header_list = []
                     group_header_list.append(row[-1][-4:])
-                    logsheet_content_string.append(" ".join((row[0], row[1][:3], row[2], row[-1][:8], )))
+                    logsheet_content_string += (" ".join((row[0], row[1][:3], row[2], row[-1][:8], )))
                 else:
                     group_header_list.append(row[-1][-4:])
 
