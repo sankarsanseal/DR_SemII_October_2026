@@ -79,7 +79,7 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
     
     # Process body rows
     # for row in data_rows:
-    formatted_data.append([Paragraph(cell, body_style) for cell in row])
+    formatted_data.append([Paragraph(cell, body_style) for cell in data])
 
     # 5. Define column widths (Total width available on Letter page with 36pt margins = 540pt)
     column_widths = [400, 100]
