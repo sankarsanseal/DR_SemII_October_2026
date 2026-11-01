@@ -272,8 +272,8 @@ if conn_sql:
                     ):
 
                     if len(group_header_list) > 0:
-                        logsheet_content_string.append(", ".join(group_header_list))
-                        logsheet_content_string.append("=", len(group_header_list))
+                        logsheet_content_string += (", ".join(group_header_list))
+                        logsheet_content_string += ("=", len(group_header_list))
                         group_header_list = []
                     group_header_list.append(row[-1][-4:])
                     logsheet_content_string.append(" ".join((row[0], row[1][:3], row[2], row[-1][:8], )))
@@ -285,11 +285,11 @@ if conn_sql:
                 previous_exam_category = row[2]
                 previous_roll_no_prefix = row[-1][:8]
             else:
-                logsheet_content_string.append(", ".join(group_header_list))
-                logsheet_content_string.append("=", len(group_header_list))
+                logsheet_content_string += (", ".join(group_header_list))
+                logsheet_content_string += ("=", len(group_header_list))
 
 
-        generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
+    generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
                        data = [logsheet_content_string]
                        )
 
