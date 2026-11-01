@@ -286,7 +286,7 @@ if conn_sql:
                 previous_roll_no_prefix = row[-1][:8]
             else:
                 logsheet_content_string += (", ".join(group_header_list))
-                logsheet_content_string += ("=", len(group_header_list))
+                logsheet_content_string += "=" + str(len(group_header_list))
 
 
     generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
