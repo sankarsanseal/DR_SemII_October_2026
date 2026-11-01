@@ -289,7 +289,7 @@ if conn_sql:
                 logsheet_content_string.append("=", len(group_header_list))
 
 
-    generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
+        generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
                        data = [logsheet_content_string]
                        )
 
