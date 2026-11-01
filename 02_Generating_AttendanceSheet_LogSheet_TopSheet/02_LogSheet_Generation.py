@@ -290,7 +290,8 @@ if conn_sql:
 
 
     generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
-                       data = [logsheet_content_string, []])
+                       data = [logsheet_content_string]
+                       )
 
 
 
