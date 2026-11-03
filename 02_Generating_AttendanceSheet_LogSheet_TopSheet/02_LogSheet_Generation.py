@@ -9,16 +9,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
 
 def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
     # 1. Setup document container with margins
     doc = SimpleDocTemplate(
         filename,
         pagesize=A4,
-        rightMargin=36,
-        leftMargin=36,
-        topMargin=36,
-        bottomMargin=36
+        rightMargin=0.2 * inch,
+        leftMargin=0.2 * inch,
+        topMargin= 0.2 * inch,
+        bottomMargin= 0.2 * inch,
     )
     story = []
 
@@ -32,7 +33,7 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
         fontSize=20,
         leading=24,
         # textColor=colors.HexColor("#1A365D"),
-        spaceAfter=15
+        # spaceAfter=15
     )
     
     # Custom styles for table cells to force automatic text wrapping
@@ -50,7 +51,8 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
         parent=styles['Normal'],
         fontSize=10,
         leading=13,
-        textColor=colors.HexColor("#2D3748")
+        textColor = colors.black,
+        # textColor=colors.HexColor("#2D3748")
     )
 
     # Add a title to the document flow
@@ -58,7 +60,7 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
     story.append(Spacer(1, 10))
 
     # 3. Define raw table data
-    headers = ["Roll No.s of Students Allotted to the Room", "Roll No of Absent Students",]
+    # headers = ["Roll No.s of Students Allotted to the Room", "Roll No of Absent Students",]
     
     # raw_rows = [
     #     ["INV-001", "GigaBit Network Router Enterprise Pro", "Hardware", "45", "Optimal stock level. No reorder required."],
@@ -72,47 +74,69 @@ def generate_pdf_table(filename="data_report.pdf", data : str = "" ):
     # raw_rows = raw_rows * 6 
 
     # 4. Wrap all string cell values in Paragraph components
-    formatted_data = []
+    formatted_data = [["",""] for i in range(len(data))]
+    formatted_data[0] = (data[0]).copy()
     
     # Process headers
-    formatted_data.append([Paragraph(h, header_style) for h in headers])
+    # formatted_data.append([Paragraph(h, header_style) for h in headers])
     
     # Process body rows
     # for row in data_rows:
-    formatted_data.append([Paragraph(cell, body_style) for cell in data])
+    # formatted_data = [  [ Paragraph( "<b>" + cell.split("**")[0] + "</b>") + Paragraph(cell.split("**")[1], body_style) for cell in row] for row in data ]
 
+    for i_row, row in enumerate(data[1:], start = 1):
+        for i_cell, cell in enumerate(row):
+
+            if len(cell.split("**")) > 1:
+                for indx, para in enumerate(cell.split("**")):
+
+                    if indx % 2 == 0:
+                        formatted_data[i_row][0]+Paragraph( "<b>" + para + "</b>", body_style).text
+                    else:
+                        formatted_data[i_row][0]+Paragraph(para, body_style).text
+                        
     # 5. Define column widths (Total width available on Letter page with 36pt margins = 540pt)
-    column_widths = [400, 100]
+    column_widths = [5 * inch, 2 * inch]
+
+    # row_heights = [ 11, ] 
+    
+    # row_heights.append([ 5 * inch] for i in range(len(data)))
 
     # 6. Initialize Table object
     # repeatRows=1 ensures headers appear at the top of every new page
-    table = Table(formatted_data, colWidths=column_widths, repeatRows=1)
+    table = Table(
+                    formatted_data, 
+                    colWidths=column_widths, 
+                    # rowHeights = row_heights, 
+                    repeatRows=1
+                  )
 
     # 7. Apply structural and visual styles
     table_style = TableStyle([
         # Header configurations
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1A365D")),
+        # ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#1A365D")),
         ('ALIGN', (0, 0), (-1, 0), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        # ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        # ('TOPPADDING', (0, 0), (-1, 0), 8),
         
         # Grid line and border layouts
-        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor("#0D1B2A")),
-        ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
-        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+        # ('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor("#0D1B2A")),
+        # ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+        # ('BOX', (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black)
         
         # Row padding configurations
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        # ('TOPPADDING', (0, 1), (-1, -1), 6),
+        # ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        # ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        # ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ])
 
     # Dynamic styling rule: Add alternating light-grey rows for readability
-    for i in range(1, len(formatted_data)):
-        if i % 2 == 0:
-            table_style.add('BACKGROUND', (0, i), (-1, i), colors.HexColor("#F7FAFC"))
+    # for i in range(1, len(formatted_data)):
+        # if i % 2 == 0:
+            # table_style.add('BACKGROUND', (0, i), (-1, i), colors.HexColor("#F7FAFC"))
 
     table.setStyle(table_style)
     story.append(table)
@@ -226,7 +250,9 @@ if conn_sql:
                     )                
 
 
-    logsheet_content_string = ""
+    logsheet_content_string = [
+        ["Roll No.s of Students Allotted to the Room", "Roll No of Absent Students",]
+        ]
 
     if logsheet_form_submission_button and (selected_date is not None 
                                             and selected_time is not None 
@@ -262,7 +288,9 @@ if conn_sql:
             previous_exam_category = ""
             previous_roll_no_prefix = ""
 
+            student_list_as_str = ""
             group_header_list = []
+            roll_count = 1
             for row in room_student_list_resultset.fetchall():
 
                 if (previous_course_code != row[0]
@@ -272,25 +300,33 @@ if conn_sql:
                     ):
 
                     if len(group_header_list) > 0:
-                        logsheet_content_string += (", ".join(group_header_list))
-                        logsheet_content_string += ("=" + str (len(group_header_list)) +"\n")
+                        student_list_as_str += (", ".join(group_header_list))
+                        student_list_as_str += ("=" + str (len(group_header_list)) +"\n **")
                         group_header_list = []
+                        roll_count = 0
                     group_header_list.append(row[-1][-4:])
-                    logsheet_content_string += (" ".join((row[0], row[1][:3], row[2], row[-1][:8], )) + "\n")
+                    student_list_as_str += (  "\n" + " ".join((row[0], row[1][:3], row[2], row[-1][:8], )) + "\n **")
                 else:
-                    group_header_list.append(row[-1][-4:])
+                    # group_header_list.append(("\n" if roll_count % 12 == 0 else "") + row[-1][-4:] )
+                    group_header_list.append(row[-1][-4:] )
+
+                    if roll_count % 12 == 0:
+                        roll_count = 0
+
+                roll_count += 1
+
 
                 previous_course_code = row[0]
                 previous_nep_program = row[1][:3]
                 previous_exam_category = row[2]
                 previous_roll_no_prefix = row[-1][:8]
             else:
-                logsheet_content_string += (", ".join(group_header_list))
-                logsheet_content_string += "=" + str(len(group_header_list))
-
+                student_list_as_str += (", ".join(group_header_list))
+                student_list_as_str += "=" + str(len(group_header_list))
+                logsheet_content_string.append([student_list_as_str, ""])
 
     generate_pdf_table(filename = f"LogSheet_RoomNo{selected_room}_{selected_date}_{selected_time}.pdf",
-                       data = [logsheet_content_string]
+                       data = logsheet_content_string,
                        )
 
 
